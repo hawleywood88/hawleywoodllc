@@ -65,7 +65,7 @@ function renderPipeline(apps) {
 
   const grid = document.getElementById('pipeline-grid');
   grid.innerHTML = apps.map(app => `
-    <div class="bg-white/[0.03] border border-white/10 rounded-2xl p-6 flex flex-col">
+    <div class="flex-none w-72 sm:w-80 snap-start bg-white/[0.03] border border-white/10 rounded-2xl p-6 flex flex-col">
       <div class="flex items-center justify-between mb-3">
         <span class="text-xs font-semibold px-3 py-1 rounded-full border ${STATUS_STYLES[app.status] || 'bg-white/10 text-slate-300 border-white/20'}">${app.status}</span>
         <span class="text-xs text-slate-500">${app.category}</span>
@@ -86,6 +86,16 @@ function renderPipeline(apps) {
   grid.querySelectorAll('.notify-form').forEach(form => {
     form.addEventListener('submit', onNotifySubmit);
   });
+
+  updatePipelineAlignment();
+  window.addEventListener('resize', updatePipelineAlignment);
+}
+
+function updatePipelineAlignment() {
+  const grid = document.getElementById('pipeline-grid');
+  const overflowing = grid.scrollWidth > grid.clientWidth + 1;
+  grid.classList.toggle('justify-center', !overflowing);
+  grid.classList.toggle('justify-start', overflowing);
 }
 
 // ponytail: emails saved to localStorage only, no backend. Point this at
