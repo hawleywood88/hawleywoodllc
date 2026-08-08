@@ -1,0 +1,32 @@
+{
+  "activeApp": {
+    "id": "coral-companion",
+    "name": "Coral Companion",
+    "tagline": "Your ultimate companion for Coral Island.",
+    "summary": "A free companion app for the farming sim Coral Island. Track museum donations, altar offerings, shipped items, and farm upgrades, browse an interactive island map and full field guide, and manage relationships and birthdays — all offline, with dark mode.",
+    "icon": "assets/coral-companion-icon.png",
+    "screenshot": "assets/coral-companion-screenshot.png",
+    "features": [
+      "Museum & altar donation tracking",
+      "Interactive island map",
+      "Full field guide: items, townsfolk, recipes, shops, upgrades",
+      "Relationship & birthday manager",
+      "Farm to-do lists & notes",
+      "Works fully offline",
+      "Dark mode"
+    ],
+    "appStoreUrl": "https://apps.apple.com/us/app/coral-companion/id6785317639",
+    "playStoreUrl": "https://play.google.com/store/apps/details?id=com.hawleywood.coralcompanion&pcampaignid=web_share",
+    "website": "https://coralcompanion.app"
+  },
+  "pipeline": [
+    {
+      "id": "cluewright",
+      "name": "Cluewright",
+      "status": "In Development",
+      "category": "Games - Puzzles",
+      "summary": "A reverse-deduction puzzle game. Instead of solving a puzzle, you design one.",
+      "notify": false
+    }
+  ]
+}

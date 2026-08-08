@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hawleywood Admin — Pipeline Editor</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪵</text></svg>">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          cerulean: { DEFAULT: '#2E86AB', dark: '#1F5F7A' },
+          mustard: '#D9A521',
+          burnt: '#C1571A',
+          slateink: '#0b1220'
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-slateink text-slate-100 font-sans antialiased min-h-screen">
+<div class="max-w-3xl mx-auto px-6 py-12">
+
+  <a href="index.html" class="text-sm text-cerulean hover:underline">&larr; Back to site</a>
+  <h1 class="text-3xl font-bold mt-4 mb-2">Pipeline Editor</h1>
+  <p class="text-slate-400 mb-8">
+    Edit the "In The Workshop" cards, then download the updated <code class="text-slate-300">apps.json</code>
+    and drop it into <code class="text-slate-300">data/apps.json</code> in your project (then commit &amp; push —
+    this page can't publish to the live site by itself, it's static hosting with no backend).
+  </p>
+
+  <div id="cards" class="space-y-4 mb-6"></div>
+
+  <div class="flex flex-wrap gap-3">
+    <button id="add-card" class="border border-white/20 hover:border-white/40 transition px-5 py-2.5 rounded-full font-semibold text-sm">
+      + Add App
+    </button>
+    <button id="save" class="bg-cerulean hover:bg-cerulean-dark transition px-5 py-2.5 rounded-full font-semibold text-sm">
+      Download apps.json
+    </button>
+  </div>
+  <p id="status" class="text-sm text-emerald-400 mt-3 hidden"></p>
+</div>
+
+<template id="card-template">
+  <div class="pipeline-card bg-white/[0.03] border border-white/10 rounded-2xl p-5 space-y-3">
+    <div class="grid sm:grid-cols-2 gap-3">
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">App Name</label>
+        <input data-field="name" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cerulean">
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Category</label>
+        <input data-field="category" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cerulean">
+      </div>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-400 mb-1">Status</label>
+      <select data-field="status" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cerulean">
+        <option>In Development</option>
+        <option>Beta</option>
+        <option>Coming Soon</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-400 mb-1">Summary</label>
+      <textarea data-field="summary" rows="2" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cerulean"></textarea>
+    </div>
+    <div class="flex items-center justify-between pt-1">
+      <label class="flex items-center gap-2 text-sm text-slate-300">
+        <input type="checkbox" data-field="notify" class="accent-cerulean">
+        Show "Notify Me" field
+      </label>
+      <button data-action="remove" class="text-sm text-burnt hover:underline">Remove</button>
+    </div>
+  </div>
+</template>
+
+<script>
+let activeApp = null;
+
+function slugify(name) {
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'app';
+}
+
+function addCard(app = { name: '', status: 'In Development', category: '', summary: '', notify: true }) {
+  const template = document.getElementById('card-template');
+  const node = template.content.firstElementChild.cloneNode(true);
+  node.querySelector('[data-field="name"]').value = app.name || '';
+  node.querySelector('[data-field="category"]').value = app.category || '';
+  node.querySelector('[data-field="status"]').value = app.status || 'In Development';
+  node.querySelector('[data-field="summary"]').value = app.summary || '';
+  node.querySelector('[data-field="notify"]').checked = app.notify !== false;
+  node.querySelector('[data-action="remove"]').addEventListener('click', () => node.remove());
+  document.getElementById('cards').appendChild(node);
+}
+
+async function init() {
+  const res = await fetch('data/apps.json');
+  const data = await res.json();
+  activeApp = data.activeApp;
+  data.pipeline.forEach(addCard);
+}
+
+document.getElementById('add-card').addEventListener('click', () => addCard());
+
+document.getElementById('save').addEventListener('click', () => {
+  const pipeline = [...document.querySelectorAll('.pipeline-card')].map(card => {
+    const name = card.querySelector('[data-field="name"]').value.trim();
+    return {
+      id: slugify(name),
+      name,
+      status: card.querySelector('[data-field="status"]').value,
+      category: card.querySelector('[data-field="category"]').value.trim(),
+      summary: card.querySelector('[data-field="summary"]').value.trim(),
+      notify: card.querySelector('[data-field="notify"]').checked
+    };
+  }).filter(app => app.name);
+
+  const json = JSON.stringify({ activeApp, pipeline }, null, 2) + '\n';
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'apps.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+
+  const status = document.getElementById('status');
+  status.textContent = `Downloaded apps.json with ${pipeline.length} pipeline app${pipeline.length === 1 ? '' : 's'}. Replace data/apps.json with it, then commit & push.`;
+  status.classList.remove('hidden');
+});
+
+init();
+</script>
+</body>
+</html>
