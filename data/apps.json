@@ -26,7 +26,17 @@
       "status": "In Development",
       "category": "Games - Puzzles",
       "summary": "A reverse-deduction puzzle game. Instead of solving a puzzle, you design one.",
-      "notify": false
+      "notify": true,
+      "notifyUrl": "https://formspree.io/f/mzepered"
+    },
+    {
+      "id": "hedgewick",
+      "name": "Hedgewick",
+      "status": "In Development",
+      "category": "Games - Puzzles",
+      "summary": "A mobile puzzle game inspired by Rodent's Revenge, reimagined as a woodland trapping game.",
+      "notify": true,
+      "notifyUrl": "https://formspree.io/f/myegewez"
     }
   ]
 }
