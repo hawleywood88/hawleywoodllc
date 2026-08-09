@@ -73,12 +73,13 @@ function renderPipeline(apps) {
       <h3 class="text-lg font-bold mb-2">${app.name}</h3>
       <p class="text-sm text-slate-400 flex-1 mb-4">${app.summary}</p>
       ${app.notify ? `
-        <form class="notify-form flex gap-2" data-app="${app.id}">
-          <input type="email" required placeholder="you@email.com"
+        <form class="notify-form flex gap-2" data-app="${app.id}" data-notify-url="${app.notifyUrl || ''}">
+          <input type="email" name="email" required placeholder="you@email.com"
             class="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:border-cerulean">
+          <input type="hidden" name="app" value="${app.name}">
           <button type="submit" class="bg-cerulean hover:bg-cerulean-dark transition text-sm font-semibold px-4 py-2 rounded-lg whitespace-nowrap">Notify Me</button>
         </form>
-        <p class="notify-thanks hidden text-xs text-emerald-400 mt-2">Thanks! We'll email you at launch.</p>
+        <p class="notify-thanks hidden text-xs mt-2">Thanks! We'll email you at launch.</p>
       ` : ''}
     </div>
   `).join('');
@@ -98,18 +99,41 @@ function updatePipelineAlignment() {
   grid.classList.toggle('justify-start', overflowing);
 }
 
-// ponytail: emails saved to localStorage only, no backend. Point this at
-// Formspree/Mailchimp/a Google Form action once you have a real list to grow.
-function onNotifySubmit(e) {
+// ponytail: no notifyUrl set for an app falls back to localStorage only —
+// nobody receives it. Set a Formspree endpoint per app in admin.html to
+// actually collect signups.
+async function onNotifySubmit(e) {
   e.preventDefault();
   const form = e.target;
-  const email = form.querySelector('input[type=email]').value;
-  const key = `notify:${form.dataset.app}`;
-  const list = JSON.parse(localStorage.getItem(key) || '[]');
-  list.push(email);
-  localStorage.setItem(key, JSON.stringify(list));
+  const thanks = form.nextElementSibling;
+  const endpoint = form.dataset.notifyUrl;
+
+  if (endpoint) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: new FormData(form)
+      });
+      if (!res.ok) throw new Error('Formspree request failed');
+    } catch (err) {
+      thanks.textContent = "Something went wrong — try again?";
+      thanks.classList.remove('hidden', 'text-emerald-400');
+      thanks.classList.add('text-burnt');
+      return;
+    }
+  } else {
+    const email = form.querySelector('input[type=email]').value;
+    const key = `notify:${form.dataset.app}`;
+    const list = JSON.parse(localStorage.getItem(key) || '[]');
+    list.push(email);
+    localStorage.setItem(key, JSON.stringify(list));
+  }
+
+  thanks.textContent = "Thanks! We'll email you at launch.";
+  thanks.classList.remove('hidden', 'text-burnt');
+  thanks.classList.add('text-emerald-400');
   form.classList.add('hidden');
-  form.nextElementSibling.classList.remove('hidden');
 }
 
 loadApps();

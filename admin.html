@@ -32,6 +32,7 @@
     and drop it into <code class="text-slate-300">data/apps.json</code> in your project (then commit &amp; push —
     this page can't publish to the live site by itself, it's static hosting with no backend).
   </p>
+  <p id="load-status" class="text-sm text-slate-500 mb-6"></p>
 
   <div id="cards" class="space-y-4 mb-6"></div>
 
@@ -70,6 +71,13 @@
       <label class="block text-xs text-slate-400 mb-1">Summary</label>
       <textarea data-field="summary" rows="2" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cerulean"></textarea>
     </div>
+    <div>
+      <label class="block text-xs text-slate-400 mb-1">
+        Formspree endpoint (optional — <a href="https://formspree.io" target="_blank" rel="noopener" class="text-cerulean hover:underline">formspree.io</a>, e.g. https://formspree.io/f/abcd1234)
+      </label>
+      <input data-field="notifyUrl" placeholder="https://formspree.io/f/abcd1234" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cerulean">
+      <p class="text-xs text-slate-500 mt-1">Leave blank and "Notify Me" emails only save in the visitor's own browser — nobody receives them.</p>
+    </div>
     <div class="flex items-center justify-between pt-1">
       <label class="flex items-center gap-2 text-sm text-slate-300">
         <input type="checkbox" data-field="notify" class="accent-cerulean">
@@ -87,7 +95,7 @@ function slugify(name) {
   return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'app';
 }
 
-function addCard(app = { name: '', status: 'In Development', category: '', summary: '', notify: true }) {
+function addCard(app = { name: '', status: 'In Development', category: '', summary: '', notify: true, notifyUrl: '' }) {
   const template = document.getElementById('card-template');
   const node = template.content.firstElementChild.cloneNode(true);
   node.querySelector('[data-field="name"]').value = app.name || '';
@@ -95,6 +103,7 @@ function addCard(app = { name: '', status: 'In Development', category: '', summa
   node.querySelector('[data-field="status"]').value = app.status || 'In Development';
   node.querySelector('[data-field="summary"]').value = app.summary || '';
   node.querySelector('[data-field="notify"]').checked = app.notify !== false;
+  node.querySelector('[data-field="notifyUrl"]').value = app.notifyUrl || '';
   node.querySelector('[data-action="remove"]').addEventListener('click', () => node.remove());
   document.getElementById('cards').appendChild(node);
 }
@@ -104,6 +113,11 @@ async function init() {
   const data = await res.json();
   activeApp = data.activeApp;
   data.pipeline.forEach(addCard);
+
+  const loadStatus = document.getElementById('load-status');
+  loadStatus.textContent = data.pipeline.length
+    ? `Currently live on the site: ${data.pipeline.map(a => a.name).join(', ')}.`
+    : 'Nothing is currently in the pipeline section — it\'s hidden on the live site.';
 }
 
 document.getElementById('add-card').addEventListener('click', () => addCard());
@@ -111,7 +125,8 @@ document.getElementById('add-card').addEventListener('click', () => addCard());
 document.getElementById('save').addEventListener('click', () => {
   const pipeline = [...document.querySelectorAll('.pipeline-card')].map(card => {
     const name = card.querySelector('[data-field="name"]').value.trim();
-    return {
+    const notifyUrl = card.querySelector('[data-field="notifyUrl"]').value.trim();
+    const app = {
       id: slugify(name),
       name,
       status: card.querySelector('[data-field="status"]').value,
@@ -119,6 +134,8 @@ document.getElementById('save').addEventListener('click', () => {
       summary: card.querySelector('[data-field="summary"]').value.trim(),
       notify: card.querySelector('[data-field="notify"]').checked
     };
+    if (notifyUrl) app.notifyUrl = notifyUrl;
+    return app;
   }).filter(app => app.name);
 
   const json = JSON.stringify({ activeApp, pipeline }, null, 2) + '\n';
